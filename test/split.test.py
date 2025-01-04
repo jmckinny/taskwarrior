@@ -59,11 +59,11 @@ class TestSplit(TestCase):
         self.assertEqual(code, 0)
 
         for i in range(1, 4):
-            code, description, err = self.t(f"_get {i}.project")
-            self.assertEqual(description, f"{large_task}\n")
+            code, project, err = self.t(f"_get {i}.project")
+            self.assertEqual(project, f"{large_task}\n")
 
-            code, project, err = self.t(f"_get {i}.description")
-            self.assertEqual(project, f"subtask{i}\n")
+            code, description, err = self.t(f"_get {i}.description")
+            self.assertEqual(description, f"subtask{i}\n")
 
 
 if __name__ == "__main__":
