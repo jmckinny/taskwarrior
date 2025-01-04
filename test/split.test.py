@@ -55,12 +55,15 @@ class TestSplit(TestCase):
             f"Split task 1 '{large_task}' into 3 subtasks? (yes/no) Split task into 3 tasks.\n",
         )
 
-        for i in range(2, 5):
+        cou, out, err = self.t("list") # GC/handleRecurrence
+        self.assertEqual(code, 0)
+
+        for i in range(1, 4):
             code, description, err = self.t(f"_get {i}.project")
             self.assertEqual(description, f"{large_task}\n")
 
             code, project, err = self.t(f"_get {i}.description")
-            self.assertEqual(project, f"subtask{i-1}\n")
+            self.assertEqual(project, f"subtask{i}\n")
 
 
 if __name__ == "__main__":
