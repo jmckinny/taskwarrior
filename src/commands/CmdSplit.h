@@ -35,6 +35,10 @@ class CmdSplit : public Command {
  public:
   CmdSplit();
   int execute(std::string&);
+
+ private:
+  std::string get_new_project_name(const std::string& existing_project,
+                                   const std::string& description);
 };
 
 #endif
