@@ -40,8 +40,7 @@ class TestSplit(TestCase):
         self.t = Task()
 
     def test_split(self):
-        "Testing split command"
-
+        """Testing split command basic case"""
         large_task = "largeone"
 
         self.t(f"add {large_task}")
@@ -65,6 +64,30 @@ class TestSplit(TestCase):
             code, description, err = self.t(f"_get {i}.description")
             self.assertEqual(description, f"subtask{i}\n")
 
+
+    def test_split_subproject(self):
+        """Test splitting a task with an existing project"""
+        large_task = "largeone"
+        large_task_project = "bigproj"
+
+        self.t(f"add {large_task} project:{large_task_project}")
+
+        code, out, err = self.t("1 split subtask1 subtask2 subtask3", input="yes\n")
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            out,
+            f"Split task 1 '{large_task}' into 3 subtasks? (yes/no) Split task into 3 tasks.\n",
+        )
+
+        code, out, err = self.t("list") # GC/handleRecurrence
+        self.assertEqual(code, 0)
+
+        for i in range(1, 4):
+            code, description, err = self.t(f"_get {i}.description")
+            self.assertEqual(description, f"subtask{i}\n")
+
+            code, project, err = self.t(f"_get {i}.project")
+            self.assertEqual(project, f"{large_task_project}.{large_task}\n")
 
 if __name__ == "__main__":
     from simpletap import TAPTestRunner
