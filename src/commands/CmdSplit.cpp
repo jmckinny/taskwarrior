@@ -33,6 +33,7 @@
 #include <format.h>
 #include <main.h>
 #include <shared.h>
+#include <util.h>
 
 #include <iostream>
 
@@ -67,6 +68,8 @@ int CmdSplit::execute(std::string&) {
     Context::getContext().footnote("Only one task can be split at a time");
     return 1;
   }
+
+  int created_count = 0;
   std::vector<std::string> sub_tasks = Context::getContext().cli2.getWords();
 
   Task to_split(filtered[0]);
@@ -75,26 +78,33 @@ int CmdSplit::execute(std::string&) {
   question = format("Split task {1} '{2}' into {3} subtasks?", to_split.identifier(true),
                     to_split.get("description"), sub_tasks.size());
 
-  if (permission(question, filtered.size())) {
-    to_split.setStatus(Task::deleted);
-    Context::getContext().tdb2.add(to_split);
+  if (!permission(question, filtered.size())) {
+    std::cout << "Task not split.\n";
+    return 1;
   }
 
-  std::string new_project =
-      get_new_project_name(to_split.get("project"), to_split.get("description"));
+  std::string new_project = getNewProjectName(to_split.get("project"), to_split.get("description"));
 
   for (std::string word : sub_tasks) {
-    Task task;
-    task.set("description", word);
-    task.set("project", new_project);
+    Task task = Task(to_split);
+    task.id = 0;                       // Reset, and TDB2::add will set.
+    task.set("uuid", uuid());          // Needs a new UUID.
+    task.set("description", word);     // Set new description
+    task.set("project", new_project);  // Set new subproject
     Context::getContext().tdb2.add(task);
+    created_count += 1;
   }
+  // Delete split task
+  to_split.setStatus(Task::deleted);
+  Context::getContext().tdb2.add(to_split);
 
+  feedback_affected(created_count == 1 ? "Split task into {1} task." : "Split task into {1} tasks.",
+                    created_count);
   return 0;
 }
 
-std::string CmdSplit::get_new_project_name(const std::string& existing_project,
-                                           const std::string& description) {
+std::string CmdSplit::getNewProjectName(const std::string& existing_project,
+                                        const std::string& description) {
   std::string new_project;
   if (!existing_project.empty()) {
     new_project += format("{1}.", existing_project);
