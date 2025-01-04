@@ -54,7 +54,7 @@ class TestSplit(TestCase):
             f"Split task 1 '{large_task}' into 3 subtasks? (yes/no) Split task into 3 tasks.\n",
         )
 
-        cou, out, err = self.t("list") # GC/handleRecurrence
+        cou, out, err = self.t("list")  # GC/handleRecurrence
         self.assertEqual(code, 0)
 
         for i in range(1, 4):
@@ -63,7 +63,6 @@ class TestSplit(TestCase):
 
             code, description, err = self.t(f"_get {i}.description")
             self.assertEqual(description, f"subtask{i}\n")
-
 
     def test_split_subproject(self):
         """Test splitting a task with an existing project"""
@@ -79,7 +78,7 @@ class TestSplit(TestCase):
             f"Split task 1 '{large_task}' into 3 subtasks? (yes/no) Split task into 3 tasks.\n",
         )
 
-        code, out, err = self.t("list") # GC/handleRecurrence
+        code, out, err = self.t("list")  # GC/handleRecurrence
         self.assertEqual(code, 0)
 
         for i in range(1, 4):
@@ -88,6 +87,7 @@ class TestSplit(TestCase):
 
             code, project, err = self.t(f"_get {i}.project")
             self.assertEqual(project, f"{large_task_project}.{large_task}\n")
+
 
 if __name__ == "__main__":
     from simpletap import TAPTestRunner
