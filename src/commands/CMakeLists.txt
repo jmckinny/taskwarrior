@@ -46,6 +46,7 @@ set (commands_SRCS Command.cpp        Command.h
                    CmdPurge.cpp       CmdPurge.h
                    CmdReports.cpp     CmdReports.h
                    CmdShow.cpp        CmdShow.h
+                   CmdSplit.cpp       CmdSplit.h
                    CmdStart.cpp       CmdStart.h
                    CmdStats.cpp       CmdStats.h
                    CmdStop.cpp        CmdStop.h

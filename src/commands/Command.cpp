@@ -48,6 +48,7 @@
 #include <CmdDone.h>
 #include <CmdDuplicate.h>
 #include <CmdEdit.h>
+#include <CmdSplit.h>
 #include <Command.h>
 #include <format.h>
 #include <shared.h>
@@ -146,6 +147,8 @@ void Command::factory(std::map<std::string, Command*>& all) {
   c = new CmdCount();
   all[c->keyword()] = c;
   c = new CmdDelete();
+  all[c->keyword()] = c;
+  c = new CmdSplit();
   all[c->keyword()] = c;
   c = new CmdDenotate();
   all[c->keyword()] = c;
