@@ -170,6 +170,7 @@ set (pythonTests
   show.test.py
   sorting.test.py
   special.test.py
+  split.test.py
   start.test.py
   stats.test.py
   substitute.test.py

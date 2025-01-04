@@ -96,7 +96,7 @@ int CmdSplit::execute(std::string&) {
   }
   // Delete split task
   to_split.setStatus(Task::deleted);
-  Context::getContext().tdb2.add(to_split);
+  Context::getContext().tdb2.modify(to_split);
 
   feedback_affected(created_count == 1 ? "Split task into {1} task." : "Split task into {1} tasks.",
                     created_count);
