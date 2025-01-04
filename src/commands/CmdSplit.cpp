@@ -70,6 +70,8 @@ int CmdSplit::execute(std::string&) {
   std::vector<std::string> sub_tasks = Context::getContext().cli2.getWords();
 
   Task to_split(filtered[0]);
+  std::string project_name = to_split.get("description");
+
   std::string question;
   question = format("Split task {1} '{2}' into {3} subtasks?", to_split.identifier(true),
                     to_split.get("description"), sub_tasks.size());
@@ -82,6 +84,7 @@ int CmdSplit::execute(std::string&) {
   for (std::string word : sub_tasks) {
     Task task;
     task.set("description", word);
+    task.set("project", project_name);
     Context::getContext().tdb2.add(task);
   }
 
