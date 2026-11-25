@@ -114,11 +114,13 @@ int CmdInfo::execute(std::string& output) {
     Color c;
     autoColorize(task, c);
     auto description = task.get("description");
-    auto indent = Context::getContext().config.getInteger("indent.annotation");
+    if (Context::getContext().config.getBoolean("annotation.info")) {
+      auto indent = Context::getContext().config.getInteger("indent.annotation");
 
-    for (auto& anno : task.getAnnotations())
-      description += '\n' + std::string(indent, ' ') +
-                     Datetime(anno.first.substr(11)).toString(dateformatanno) + ' ' + anno.second;
+      for (auto& anno : task.getAnnotations())
+        description += '\n' + std::string(indent, ' ') +
+                       Datetime(anno.first.substr(11)).toString(dateformatanno) + ' ' + anno.second;
+    }
 
     if (task.has("description")) {
       row = view.addRow();
@@ -214,6 +216,27 @@ int CmdInfo::execute(std::string& output) {
       row = view.addRow();
       view.set(row, 0, "Recurrence type");
       view.set(row, 1, task.get("rtype"));
+    }
+
+    // iter
+    if (task.has("iter")) {
+      row = view.addRow();
+      view.set(row, 0, "Iter");
+      view.set(row, 1, task.get("iter"));
+    }
+
+    // iter_type
+    if (task.has("iter_type")) {
+      row = view.addRow();
+      view.set(row, 0, "Iter type");
+      view.set(row, 1, task.get("iter_type"));
+    }
+
+    // iter_count
+    if (task.has("iter_count")) {
+      row = view.addRow();
+      view.set(row, 0, "Iter count");
+      view.set(row, 1, task.get("iter_count"));
     }
 
     // entry
@@ -320,6 +343,7 @@ int CmdInfo::execute(std::string& output) {
       if (task.hasTag("DUE")) virtualTags += "DUE ";
       if (task.hasTag("DUETODAY")) virtualTags += "DUETODAY ";  // 2016-03-29: Deprecated in 2.6.0
       if (task.hasTag("INSTANCE")) virtualTags += "INSTANCE ";
+      if (task.hasTag("ITERATIVE")) virtualTags += "ITERATIVE ";
       if (task.hasTag("LATEST")) virtualTags += "LATEST ";
       if (task.hasTag("MONTH")) virtualTags += "MONTH ";
       if (task.hasTag("ORPHAN")) virtualTags += "ORPHAN ";

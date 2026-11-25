@@ -187,6 +187,8 @@ mod ffi {
             region: String,
             bucket: String,
             profile_name: String,
+            endpoint_url: String,
+            force_path_style: bool,
             encryption_secret: &CxxString,
             avoid_snapshots: bool,
         ) -> Result<()>;
@@ -198,6 +200,8 @@ mod ffi {
             bucket: String,
             access_key_id: String,
             secret_access_key: String,
+            endpoint_url: String,
+            force_path_style: bool,
             encryption_secret: &CxxString,
             avoid_snapshots: bool,
         ) -> Result<()>;
@@ -207,6 +211,8 @@ mod ffi {
             &mut self,
             region: String,
             bucket: String,
+            endpoint_url: String,
+            force_path_style: bool,
             encryption_secret: &CxxString,
             avoid_snapshots: bool,
         ) -> Result<()>;
@@ -304,6 +310,7 @@ mod ffi {
         Completed,
         Deleted,
         Recurring,
+        Iterative,
         Unknown,
     }
 
@@ -874,6 +881,7 @@ impl Replica {
         rt().block_on(async { Ok(Box::new(self.0.working_set().await?.into())) })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_local(&mut self, server_dir: String, avoid_snapshots: bool) -> Result<(), CppError> {
         rt().block_on(async {
             let mut server = tc::server::ServerConfig::Local {
@@ -885,6 +893,7 @@ impl Replica {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_remote(
         &mut self,
         url: String,
@@ -904,11 +913,14 @@ impl Replica {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_aws_with_profile(
         &mut self,
         region: String,
         bucket: String,
         profile_name: String,
+        endpoint_url: String,
+        force_path_style: bool,
         encryption_secret: &CxxString,
         avoid_snapshots: bool,
     ) -> Result<(), CppError> {
@@ -918,8 +930,8 @@ impl Replica {
                 bucket,
                 credentials: tc::server::AwsCredentials::Profile { profile_name },
                 encryption_secret: encryption_secret.as_bytes().to_vec(),
-                endpoint_url: None,
-                force_path_style: false,
+                endpoint_url: (!endpoint_url.is_empty()).then_some(endpoint_url),
+                force_path_style,
             }
             .into_server()
             .await?;
@@ -927,12 +939,15 @@ impl Replica {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_aws_with_access_key(
         &mut self,
         region: String,
         bucket: String,
         access_key_id: String,
         secret_access_key: String,
+        endpoint_url: String,
+        force_path_style: bool,
         encryption_secret: &CxxString,
         avoid_snapshots: bool,
     ) -> Result<(), CppError> {
@@ -945,8 +960,8 @@ impl Replica {
                     secret_access_key,
                 },
                 encryption_secret: encryption_secret.as_bytes().to_vec(),
-                endpoint_url: None,
-                force_path_style: false,
+                endpoint_url: (!endpoint_url.is_empty()).then_some(endpoint_url),
+                force_path_style,
             }
             .into_server()
             .await?;
@@ -954,10 +969,13 @@ impl Replica {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_aws_with_default_creds(
         &mut self,
         region: String,
         bucket: String,
+        endpoint_url: String,
+        force_path_style: bool,
         encryption_secret: &CxxString,
         avoid_snapshots: bool,
     ) -> Result<(), CppError> {
@@ -967,8 +985,8 @@ impl Replica {
                 bucket,
                 credentials: tc::server::AwsCredentials::Default,
                 encryption_secret: encryption_secret.as_bytes().to_vec(),
-                endpoint_url: None,
-                force_path_style: false,
+                endpoint_url: (!endpoint_url.is_empty()).then_some(endpoint_url),
+                force_path_style,
             }
             .into_server()
             .await?;
@@ -976,6 +994,7 @@ impl Replica {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sync_to_gcp(
         &mut self,
         bucket: String,
@@ -1215,6 +1234,7 @@ impl Task {
             taskchampion::Status::Completed => ffi::Status::Completed,
             taskchampion::Status::Deleted => ffi::Status::Deleted,
             taskchampion::Status::Recurring => ffi::Status::Recurring,
+            taskchampion::Status::Iterative => ffi::Status::Iterative,
             taskchampion::Status::Unknown(_) => ffi::Status::Unknown,
         }
     }
@@ -1342,6 +1362,7 @@ impl Task {
             ffi::Status::Completed => tc::Status::Completed,
             ffi::Status::Deleted => tc::Status::Deleted,
             ffi::Status::Recurring => tc::Status::Recurring,
+            ffi::Status::Iterative => tc::Status::Iterative,
             // `Status::Unknown` carries no value on this side of the FFI, so it cannot be
             // round-tripped back into `tc::Status::Unknown(value)`.
             _ => {

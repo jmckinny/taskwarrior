@@ -56,7 +56,7 @@ int TEST_NAME(int, char**) {
 
   try {
     // Set up configuration.
-    context.config.parse(configurationDefaults);
+    context.config.parse(configurationDefaults, 0, {TASK_RCDIR});
     context.config.set("fontunderline", true);
     context.config.set("tag.indicator", "+");
     context.config.set("dependency.indicator", "D");
@@ -136,7 +136,8 @@ int TEST_NAME(int, char**) {
     view.add(Column::factory("due.countdown", report));
     view.add(Column::factory("start.active", report));
     view.add(Column::factory("urgency", report));
-    view.width(context.getWidth());
+    // Keep wrapping independent of the terminal running this test.
+    view.width(200);
     view.leftMargin(4);
     view.extraPadding(0);
     view.intraPadding(1);

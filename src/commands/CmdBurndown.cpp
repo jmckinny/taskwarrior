@@ -209,8 +209,8 @@ static TaskEpochRange findTaskEpochRange(const Task& task, time_t now_epoch, tim
 
   Task::status status = task.getStatus();
 
-  // Pending/waiting tasks extend to today if they lack an end.
-  if (status == Task::pending || status == Task::waiting) {
+  // Open tasks extend to today if they lack an end.
+  if (task.is_open()) {
     time_t last_epoch = end_epoch.value_or(now_epoch);
     return {entry_epoch, last_epoch, entry_epoch, end_epoch, peak_entry, peak_end, start_epoch};
   }
@@ -277,7 +277,7 @@ void Chart::accumulateTasks(const std::vector<Task>& tasks,
     // but make no contribution to the chart's bars.
     if (status == Task::deleted || status == Task::recurring) continue;
 
-    if (status == Task::pending || status == Task::waiting) {
+    if (task.is_open()) {
       // Pending tasks contribute to the pending bars through [entry, last],
       // inclusive of values equal to last. For pending tasks, last_epoch will be
       // either the now_epoch or end_epoch.
@@ -640,15 +640,21 @@ Datetime Chart::decrement(const Datetime& input, char period) {
 // the leftmost bar's epoch, used for carrying over the done count in cumulative
 // mode.
 void Chart::generateBars() {
+  // render() rejects these dimensions; avoid generating out-of-range dates first.
+  if (_graph_height < 5 || _graph_width < 2 || _graph_height > 1000 || _graph_width > 1000) return;
+
   Bar bar;  // future contributor: if you change the logic used for counting,
             // such that this function changes the counts, be mindful:
             // because we copy the struct, your state would be carried through
             // into each loop.
   Datetime cursor = quantize(Datetime(), _period);
+  int bar_count = _estimated_bars;
+  // Datetime's calendar constructor does not support years before 1969.
+  if (_period == 'Y') bar_count = std::min(bar_count, cursor.year() - 1969 + 1);
 
   // Iterate backwards from today, generating labels for each bar.
   char str[12];
-  for (int i = 0; i < _estimated_bars; ++i) {
+  for (int i = 0; i < bar_count; ++i) {
     // Create the major and minor labels.
     switch (_period) {
       case 'D':  // month/day
@@ -690,8 +696,8 @@ void Chart::generateBars() {
     // counts in cumulative mode.
     _earliest = cursor;
 
-    // Move to the previous period.
-    cursor = decrement(cursor, _period);
+    // Move to the previous period only if another bar is needed.
+    if (i + 1 < bar_count) cursor = decrement(cursor, _period);
   }
 }
 

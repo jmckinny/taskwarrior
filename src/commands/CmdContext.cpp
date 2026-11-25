@@ -189,8 +189,12 @@ void CmdContext::defineContext(const std::vector<std::string>& words, std::strin
                    words[1]);
     }
 
-    // Extract MISCELLANEOUS arguments (containing the filter definition) for later analysis
-    std::vector<A2> lexedArgs = Context::getContext().cli2.getMiscellaneous();
+    // Lex the stored definition before the write-context check.
+    std::vector<A2> lexedArgs;
+    std::string lexeme;
+    Lexer::Type type;
+    Lexer lex(value);
+    while (lex.token(lexeme, type)) lexedArgs.push_back(A2(lexeme, type));
 
     // Check if the value is a proper filter by filtering current pending.data
     Filter filter;

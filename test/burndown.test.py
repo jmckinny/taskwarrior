@@ -103,6 +103,67 @@ class TestBurndownCommand(TestCase):
         self.assertIn("+", out)
         self.assertIn("X", out)
 
+    def test_burndown_oversized_width(self):
+        """Reject oversized charts before generating out-of-range dates."""
+        for width in (0, 65536):
+            for period in ("daily", "weekly", "monthly", "annual"):
+                with self.subTest(width=width, period=period):
+                    code, out, err = self.t(
+                        "burndown.{} rc.defaultwidth:{} rc.detection:off".format(
+                            period, width
+                        )
+                    )
+                    self.assertEqual(code, 0)
+                    self.assertIn("Terminal window too large to draw a graph.", out)
+
+    def test_burndown_invalid_height(self):
+        """Reject invalid heights before generating out-of-range dates."""
+        task = Task()
+        task.faketime("2026-11-12 12:00:00")
+        task("add dimension test entry:2026-01-01")
+        for height, size in ((1, "small"), (0, "large"), (1009, "large")):
+            for period in ("daily", "weekly", "monthly", "annual"):
+                with self.subTest(height=height, period=period):
+                    code, out, err = task(
+                        "burndown.{} rc.defaultwidth:200 rc.defaultheight:{} "
+                        "rc.reserved.lines:0 rc.detection:off".format(period, height)
+                    )
+                    self.assertEqual(code, 0)
+                    self.assertIn(
+                        "Terminal window too {} to draw a graph.".format(size), out
+                    )
+
+    def test_burndown_height_boundaries(self):
+        """The minimum and maximum drawable graph heights still render."""
+        for height in (13, 1008):
+            for period in ("daily", "weekly", "monthly", "annual"):
+                with self.subTest(height=height, period=period):
+                    code, out, err = self.t(
+                        "burndown.{} rc.defaultwidth:80 rc.defaultheight:{} "
+                        "rc.reserved.lines:0 rc.detection:off".format(period, height)
+                    )
+                    self.assertEqual(code, 0)
+                    self.assertIn("Burndown", out)
+                    self.assertNotIn("Terminal window too", out)
+
+    def test_burndown_annual_date_boundary(self):
+        """Wide annual charts stop at the earliest supported year."""
+        task = Task()
+        for year in (1970, 2026):
+            task.faketime("{}-06-15 12:00:00".format(year))
+            for width in (80, 189, 200, 1015):
+                with self.subTest(year=year, width=width):
+                    code, out, err = task(
+                        "burndown.annual rc.defaultwidth:{} rc.defaultheight:24 "
+                        "rc.reserved.lines:0 rc.detection:off".format(width)
+                    )
+                    self.assertEqual(code, 0)
+                    self.assertIn("Annual Burndown", out)
+                    self.assertNotIn("Terminal window too", out)
+                    if year == 1970:
+                        self.assertRegex(out, r"\b69\b")
+                        self.assertRegex(out, r"\b70\b")
+
 
 if __name__ == "__main__":
     from simpletap import TAPTestRunner

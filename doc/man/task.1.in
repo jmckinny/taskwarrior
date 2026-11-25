@@ -749,8 +749,9 @@ from tasks, or the system.  Supported DOM references are:
 Note that the 'rc.<name>' reference may need to be escaped using '--' to prevent
 the reference from being interpreted as an override.
 
-Note that if the DOM reference is not valid, or the reference evaluates to a
-missing value, the command exits with 1.
+Note that if the DOM reference is not valid, the command exits with 2.  If the
+reference evaluates to a missing value, such as an unset attribute or a task
+that does not exist, the output is empty and the command exits with 0.
 
 Additionally, some components of the attributes of particular types may be
 extracted by DOM references.
@@ -818,12 +819,13 @@ are:
     DELETED      Matches if the task has deleted status
     DUE          Matches if the task is due within the next 7 days (See rc.due)
     INSTANCE     Matches if the task is a recurrent instance
+    ITERATIVE    Matches if the task has iterative status
     LATEST       Matches if the task is the newest added task
     MONTH        Matches if the task is due this month
     ORPHAN       Matches if the task has any orphaned UDA values
     OVERDUE      Matches if the task is overdue
     PARENT       Matches if the task is a parent (deprecated in 2.6.0)
-    PENDING      Matches if the task has pending status
+    PENDING      Matches if the task has pending or iterative status
     PRIORITY     Matches if the task has a priority
     PROJECT      Matches if the task has a project
     QUARTER      Matches if the task is due this quarter
@@ -853,7 +855,7 @@ add or remove a virtual tag.
 Specifies the project to which a task is related to.
 
 .TP
-.B status:pending|deleted|completed|waiting|recurring
+.B status:pending|deleted|completed|waiting|recurring|iterative
 Specifies the state of the task.
 
 .TP
@@ -867,6 +869,20 @@ Specifies the due-date of a task.
 .TP
 .B recur:<frequency>
 Specifies the frequency of a recurrence of a task.
+
+.TP
+.B iter:<interval>
+Makes the task iterative (experimental). Completing it creates the next task in the series,
+with its dates moved forward by the interval. Needs an iter_type and at least
+one of due, scheduled or wait. See
+.BR task-iterative (5).
+
+.TP
+.B iter_type:fixed|fixed+|chained
+How the next date of an iterative task is chosen: the next interval from the
+original due date, the next interval on or after now, or the next interval from
+completion. See
+.BR task-iterative (5).
 
 .TP
 .B scheduled:<ready-date>
@@ -1103,15 +1119,14 @@ and
 respectively.  The negation operator is
 .IR ! .
 
-Note that the parentheses are required when using a logical operator other than
-the 'and' operator.  The reason is that some reports contain filters that must
-be combined with the command line.  Consider this example:
+Some reports contain filters that are combined with the command line filter.
+Consider this example:
 
 .nf
   task project:Home or project:Garden list
 .fi
 
-While this looks correct, it is not.  The 'list' report contains a filter of:
+The 'list' report contains a filter of:
 
 .nf
   task show report.list.filter
@@ -1121,29 +1136,25 @@ While this looks correct, it is not.  The 'list' report contains a filter of:
   report.list.filter status:pending
 .fi
 
-Which means the example is really:
-
-.nf
-  task status:pending project:Home or project:Garden list
-.fi
-
-The implied 'and' operator makes it:
-
-.nf
-  task status:pending and project:Home or project:Garden list
-.fi
-
-This is a precedence error - the 'and' and 'or' need to be grouped using
-parentheses, like this:
+Taskwarrior puts parentheses around the command line filter before combining
+it with the report filter, so the example is really:
 
 .nf
   task status:pending and ( project:Home or project:Garden ) list
 .fi
 
-The original example therefore must be entered as:
+No parentheses are needed here.  They are still needed when you mix 'and'
+and 'or' in your own filter, because 'and' binds more tightly than 'or'.
+This example lists all Home tasks, but only the Garden tasks tagged 'weekend':
 
 .nf
-  task '( project:Home or project:Garden )' list
+  task project:Home or project:Garden +weekend list
+.fi
+
+To list the 'weekend' tasks in either project, group the 'or':
+
+.nf
+  task '( project:Home or project:Garden )' +weekend list
 .fi
 
 This includes quotes to escape the parentheses, so that the shell doesn't
@@ -1201,26 +1212,26 @@ Day number with ordinal
 .fi
 
 .TP
-Start of next (work) week (Monday), calendar week (Sunday or Monday), month, quarter and year
+Start of current week or work week (Monday), month, quarter and year
 .nf
   task ... due:sow
   task ... due:soww
-  task ... due:socw
   task ... due:som
   task ... due:soq
   task ... due:soy
 .fi
 
 .TP
-End of current (work) week (Friday), calendar week (Saturday or Sunday), month, quarter and year
+End of current week (Sunday), work week (Friday), month, quarter and year
 .nf
   task ... due:eow
   task ... due:eoww
-  task ... due:eocw
   task ... due:eom
   task ... due:eoq
   task ... due:eoy
 .fi
+
+On a Sunday, soww and eoww refer to the work week that starts the next day.
 
 .TP
 At some point or later
@@ -1292,6 +1303,12 @@ Every year or a number of years.
 .TP
 biannual, biyearly, 2yr
 Every two years.
+
+.TP
+.I Iterative tasks
+accept these frequencies and other forms. See
+.BR task-iterative (5).
+
 .RE
 
 .SH CONTEXT
@@ -1614,6 +1631,7 @@ https://www.opensource.org/licenses/mit-license.php for more information.
 .SH SEE ALSO
 .BR taskrc(5),
 .BR task-color(5),
+.BR task-iterative(5),
 .BR task-sync(5)
 
 For more information regarding Taskwarrior, see the following:

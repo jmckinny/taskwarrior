@@ -46,6 +46,15 @@
 extern std::string configurationDefaults;
 
 ////////////////////////////////////////////////////////////////////////////////
+// urgency.uda.<name>.* is only meaningful when <name> is a defined UDA.
+static bool isUdaUrgency(const std::string& name) {
+  if (name.substr(0, 12) != "urgency.uda.") return false;
+
+  auto uda = name.substr(12, name.find('.', 12) - 12);
+  return Context::getContext().config.has("uda." + uda + ".type");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 CmdShow::CmdShow() {
   _keyword = "show";
   _usage = "task          show [all | substring]";
@@ -81,6 +90,7 @@ int CmdShow::execute(std::string& output) {
       " abbreviation.minimum"
       " active.indicator"
       " allow.empty.filter"
+      " annotation.info"
       " avoidlastcolumn"
       " bulk"
       " calendar.details"
@@ -198,6 +208,8 @@ int CmdShow::execute(std::string& output) {
       " sync.aws.access_key_id"
       " sync.aws.bucket"
       " sync.aws.default_credentials"
+      " sync.aws.endpoint_url"
+      " sync.aws.force_path_style"
       " sync.aws.profile"
       " sync.aws.region"
       " sync.aws.secret_access_key"
@@ -251,8 +263,7 @@ int CmdShow::execute(std::string& output) {
           i.first.substr(0, 5) != "hook." && i.first.substr(0, 4) != "uda." &&
           i.first.substr(0, 8) != "default." && i.first.substr(0, 21) != "urgency.user.project." &&
           i.first.substr(0, 17) != "urgency.user.tag." &&
-          i.first.substr(0, 21) != "urgency.user.keyword." &&
-          i.first.substr(0, 12) != "urgency.uda.") {
+          i.first.substr(0, 21) != "urgency.user.keyword." && !isUdaUrgency(i.first)) {
         unrecognized.push_back(i.first);
       }
     }
@@ -261,7 +272,7 @@ int CmdShow::execute(std::string& output) {
   // Find all the values that match the defaults, for highlighting.
   std::vector<std::string> default_values;
   Configuration default_config;
-  default_config.parse(configurationDefaults);
+  default_config.parse(configurationDefaults, 0, {TASK_RCDIR});
 
   for (auto& i : Context::getContext().config)
     if (i.second != default_config.get(i.first)) default_values.push_back(i.first);
@@ -334,6 +345,11 @@ int CmdShow::execute(std::string& output) {
     out << "Your .taskrc file contains these unrecognized variables:\n";
 
     for (auto& i : unrecognized) out << "  " << i << '\n';
+
+    if (std::any_of(unrecognized.begin(), unrecognized.end(),
+                    [](const std::string& i) { return i.substr(0, 12) == "urgency.uda."; }))
+      out << "urgency.uda.<name> coefficients only apply to UDAs. For tags, use "
+             "urgency.user.tag.<tag>.coefficient.\n";
 
     if (Context::getContext().color() && error.nontrivial())
       out << '\n' << format(STRING_CMD_SHOW_DIFFER_COLOR, error.colorize("color"));

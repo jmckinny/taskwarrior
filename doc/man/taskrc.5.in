@@ -252,7 +252,7 @@ is '25'.
 .TP
 .B defaultwidth=80
 The width of output used when auto-detection support is not available. Defaults
-to 80. If set to 0, it is interpreted as infinite width, therefore with no
+to 80. If set to 0 or a negative value, it is interpreted as infinite width, therefore with no
 word-wrapping; this is useful when redirecting report output to a file for subsequent
 handling.
 
@@ -362,9 +362,15 @@ Setting this to '0' means that it is an error to use a write command with no
 filter.
 
 .TP
+.B annotation.info=1
+Determines whether annotations are displayed below the description field by the
+'info' command. The default value is "1".
+
+.TP
 .B indent.annotation=2
 Controls the number of spaces to indent annotations when shown beneath the
 description field. The default value is "2".
+Negative values are treated as zero in task list reports.
 
 .TP
 .B indent.report=0
@@ -661,7 +667,11 @@ Enables ISO-8601 date support.  The default value is "1".
 .TP
 .B weekstart=Sunday
 Determines the day a week starts. Valid values are Sunday or Monday only. The
-default value is "Sunday".
+default value is "Sunday". This affects the layout of the "task calendar"
+command, week numbers, and the day that a week date such as 2026-W02 refers to.
+With Monday, week numbers follow ISO-8601. It does not affect named dates
+such as sow and eow, or the WEEK virtual tag, which always use a week from
+Monday to Sunday.
 
 .TP
 .B displayweeknumber=1
@@ -1490,6 +1500,7 @@ https://www.opensource.org/licenses/mit-license.php for more information.
 .SH SEE ALSO
 .BR task(1),
 .BR task-color(5),
+.BR task-iterative(5),
 .BR task-sync(5)
 
 For more information regarding Taskwarrior, see the following:
